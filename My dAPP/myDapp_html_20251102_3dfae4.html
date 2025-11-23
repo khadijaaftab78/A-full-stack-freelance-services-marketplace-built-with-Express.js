@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mini Token Bank</title>
+
+  <!-- Basic styling -->
+  <style>
+    body {
+      background: #f0f2f5;
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      text-align: center;
+      padding: 25px;
+      color: #333;
+      margin: 0;
+      min-height: 100vh;
+    }
+
+    h1 {
+      color: #1e88e5;
+      margin-bottom: 10px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      width: 90%;
+      max-width: 400px;
+      margin: 20px auto;
+      padding: 20px;
+    }
+
+    input, button {
+      margin: 8px;
+      padding: 10px;
+      width: 80%;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 14px;
+    }
+
+    button {
+      background: #1e88e5;
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background: #1669b2;
+    }
+
+    button:disabled {
+      background: #cccccc;
+      cursor: not-allowed;
+    }
+
+    hr {
+      margin: 25px 0;
+      border: 0;
+      border-top: 1px solid #eee;
+    }
+
+    #walletAddress {
+      font-weight: bold;
+      color: #555;
+      font-size: 0.95em;
+      word-break: break-all;
+      margin: 10px 0;
+    }
+
+    footer {
+      font-size: 0.8em;
+      margin-top: 40px;
+      color: #777;
+    }
+
+    .success {
+      color: #4CAF50;
+    }
+
+    .error {
+      color: #f44336;
+    }
+
+    .section {
+      margin: 20px 0;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Mini Token Bank 🪙</h1>
+  <p>A small decentralized app where you can deposit, send, and check token balances using your MetaMask wallet.</p>
+
+  <div class="container">
+    <!-- Connection Section -->
+    <div class="section">
+      <button id="connectButton">🔗 Connect MetaMask</button>
+      <p id="walletAddress"></p>
+      <p id="connectionStatus"></p>
+    </div>
+
+    <hr>
+
+    <!-- Deposit Section -->
+    <div class="section">
+      <h3>Deposit Tokens</h3>
+      <input type="number" id="depositAmount" placeholder="Enter amount" min="0" step="1">
+      <button id="depositButton">Deposit</button>
+    </div>
+
+    <hr>
+
+    <!-- Transfer Section -->
+    <div class="section">
+      <h3>Transfer Tokens</h3>
+      <input type="text" id="transferTo" placeholder="Receiver address (0x...)">
+      <input type="number" id="transferAmount" placeholder="Amount" min="0" step="1">
+      <button id="transferButton">Send Tokens</button>
+    </div>
+
+    <hr>
+
+    <!-- Balance Check Section -->
+    <div class="section">
+      <h3>Check Balance</h3>
+      <input type="text" id="balanceAddress" placeholder="Enter address (0x...)">
+      <button id="balanceButton">Check Balance</button>
+      <p id="balanceResult"></p>
+    </div>
+  </div>
+
+  <footer>
+    <p>Developed for MG3012 Blockchain Assignment</p>
+  </footer>
+
+  <!-- Ethers.js Library -->
+<!-- Replace the ethers.js line with this -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+
+  <script>
+    // Contract configuration - REPLACE WITH YOUR ACTUAL CONTRACT ADDRESS
+    const contractAddress = "0x133C8f9C035570afF3d6e27748785A0D6f205A5c";
+    const contractABI = [
+      "function deposit(uint256 amount) public",
+      "function transfer(address to, uint256 amount) public",
+      "function getBalance(address user) public view returns (uint256)"
+    ];
+
+    // Global variables
+    let provider = null;
+    let signer = null;
+    let contract = null;
+    let isConnected = false;
+
+    // DOM elements
+    const connectButton = document.getElementById("connectButton");
+    const walletAddress = document.getElementById("walletAddress");
+    const connectionStatus = document.getElementById("connectionStatus");
+    const depositButton = document.getElementById("depositButton");
+    const transferButton = document.getElementById("transferButton");
+    const balanceButton = document.getElementById("balanceButton");
+
+    // Initialize the dApp
+    function initApp() {
+      updateButtonStates();
+      checkExistingConnection();
+    }
+
+    // Check if user is already connected to MetaMask
+    async function checkExistingConnection() {
+      if (typeof window.ethereum !== "undefined") {
+        try {
+          const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+          if (accounts.length > 0) {
+            await setupProvider(accounts[0]);
+          }
+        } catch (error) {
+          console.log("No existing connection:", error);
+        }
+      }
+    }
+
+    // Connect wallet function
+    async function connectWallet() {
+      try {
+        console.log("Step 1: Checking for MetaMask...");
+        
+        if (typeof window.ethereum === "undefined") {
+          showStatus("❌ MetaMask not found! Please install MetaMask first.", "error");
+          return;
+        }
+
+        console.log("Step 2: Requesting accounts...");
+        showStatus("Connecting...", "");
+
+        const accounts = await window.ethereum.request({ 
+          method: "eth_requestAccounts" 
+        });
+
+        if (accounts.length === 0) {
+          showStatus("❌ No accounts found. Please unlock MetaMask.", "error");
+          return;
+        }
+
+        console.log("Step 3: Setting up connection...");
+        await setupProvider(accounts[0]);
+
+      } catch (error) {
+        console.error("Connection error:", error);
+        if (error.code === 4001) {
+          showStatus("❌ Connection rejected by user.", "error");
+        } else {
+          showStatus("❌ Connection failed: " + error.message, "error");
+        }
+      }
+    }
+
+    // Setup provider and contract
+    async function setupProvider(address) {
+      try {
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+        signer = provider.getSigner();
+        contract = new ethers.Contract(contractAddress, contractABI, signer);
+
+        console.log("Step 4: Connected to contract");
+        
+        walletAddress.textContent = "Connected: " + address;
+        connectButton.textContent = "✅ Connected";
+        connectButton.style.background = "#4CAF50";
+        connectButton.disabled = true;
+        
+        showStatus("✅ Successfully connected to MetaMask!", "success");
+        isConnected = true;
+        
+        updateButtonStates();
+
+        window.ethereum.on('accountsChanged', handleAccountsChanged);
+        window.ethereum.on('chainChanged', handleChainChanged);
+
+      } catch (error) {
+        console.error("Setup error:", error);
+        showStatus("❌ Setup failed: " + error.message, "error");
+      }
+    }
+
+    // Handle account changes
+    function handleAccountsChanged(accounts) {
+      if (accounts.length === 0) {
+        disconnectWallet();
+      } else {
+        setupProvider(accounts[0]);
+      }
+    }
+
+    // Handle chain changes
+    function handleChainChanged(chainId) {
+      window.location.reload();
+    }
+
+    // Update button states based on connection status
+    function updateButtonStates() {
+      depositButton.disabled = !isConnected;
+      transferButton.disabled = !isConnected;
+      balanceButton.disabled = !isConnected;
+    }
+
+    // Show status message
+    function showStatus(message, type) {
+      connectionStatus.textContent = message;
+      connectionStatus.className = type;
+    }
+
+    // Deposit tokens
+    async function depositTokens() {
+      if (!isConnected || !contract) {
+        showStatus("❌ Please connect MetaMask first!", "error");
+        return;
+      }
+
+      const amount = document.getElementById("depositAmount").value;
+      if (!amount || amount <= 0) {
+        showStatus("❌ Please enter a valid amount!", "error");
+        return;
+      }
+
+      try {
+        showStatus("Processing deposit...", "");
+        depositButton.disabled = true;
+        
+        const tx = await contract.deposit(amount);
+        showStatus("⏳ Waiting for transaction confirmation...", "");
+        
+        await tx.wait();
+        
+        showStatus("✅ Deposit successful!", "success");
+        document.getElementById("depositAmount").value = "";
+        
+      } catch (error) {
+        console.error("Deposit error:", error);
+        showStatus("❌ Deposit failed: " + error.message, "error");
+      } finally {
+        depositButton.disabled = false;
+      }
+    }
+
+    // Transfer tokens
+    async function transferTokens() {
+      if (!isConnected || !contract) {
+        showStatus("❌ Please connect MetaMask first!", "error");
+        return;
+      }
+
+      const to = document.getElementById("transferTo").value;
+      const amount = document.getElementById("transferAmount").value;
+
+      if (!to) {
+        showStatus("❌ Please enter receiver address!", "error");
+        return;
+      }
+
+      if (!amount || amount <= 0) {
+        showStatus("❌ Please enter a valid amount!", "error");
+        return;
+      }
+
+      if (!to.startsWith('0x') || to.length !== 42) {
+        showStatus("❌ Invalid Ethereum address!", "error");
+        return;
+      }
+
+      try {
+        showStatus("Processing transfer...", "");
+        transferButton.disabled = true;
+        
+        const tx = await contract.transfer(to, amount);
+        showStatus("⏳ Waiting for transaction confirmation...", "");
+        
+        await tx.wait();
+        
+        showStatus("🎉 Transfer completed!", "success");
+        document.getElementById("transferTo").value = "";
+        document.getElementById("transferAmount").value = "";
+        
+      } catch (error) {
+        console.error("Transfer error:", error);
+        showStatus("❌ Transfer failed: " + error.message, "error");
+      } finally {
+        transferButton.disabled = false;
+      }
+    }
+
+    // Check balance
+    async function checkBalance() {
+      if (!isConnected || !contract) {
+        showStatus("❌ Please connect MetaMask first!", "error");
+        return;
+      }
+
+      const user = document.getElementById("balanceAddress").value;
+      if (!user) {
+        showStatus("❌ Please enter an address!", "error");
+        return;
+      }
+
+      if (!user.startsWith('0x') || user.length !== 42) {
+        showStatus("❌ Invalid Ethereum address!", "error");
+        return;
+      }
+
+      try {
+        showStatus("Checking balance...", "");
+        balanceButton.disabled = true;
+        
+        const balance = await contract.getBalance(user);
+        document.getElementById("balanceResult").textContent = 
+          "Balance: " + balance.toString() + " tokens";
+        
+        showStatus("✅ Balance checked successfully!", "success");
+        
+      } catch (error) {
+        console.error("Balance check error:", error);
+        showStatus("❌ Balance check failed: " + error.message, "error");
+        document.getElementById("balanceResult").textContent = "";
+      } finally {
+        balanceButton.disabled = false;
+      }
+    }
+
+    // Event listeners
+    connectButton.addEventListener("click", connectWallet);
+    depositButton.addEventListener("click", depositTokens);
+    transferButton.addEventListener("click", transferTokens);
+    balanceButton.addEventListener("click", checkBalance);
+
+    // Initialize the app when page loads
+    window.addEventListener('load', initApp);
+  </script>
+</body>
+</html>

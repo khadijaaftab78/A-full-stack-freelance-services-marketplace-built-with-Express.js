@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Token Bank</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        body {
+            background-color: #ffffff;
+            color: #222222;
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+            border-bottom: 1px solid #e5e5e5;
+            padding-bottom: 30px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 300;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+            color: #222;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: #666;
+            font-weight: 300;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 15px;
+            color: #222;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px 0;
+            border: none;
+            border-bottom: 1px solid #e5e5e5;
+            font-size: 14px;
+            background: transparent;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-bottom: 1px solid #222;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: #222;
+            color: white;
+            border: none;
+            font-size: 14px;
+            font-weight: 500;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #444;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .info-text {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .wallet-info {
+            background: #f8f8f8;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-size: 13px;
+        }
+
+        .wallet-info p {
+            margin-bottom: 5px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            font-size: 13px;
+            text-align: center;
+        }
+
+        .success {
+            color: #222;
+            border: 1px solid #e5e5e5;
+        }
+
+        .error {
+            color: #d0021b;
+            border: 1px solid #ffebee;
+        }
+
+        .transaction-log {
+            margin-top: 30px;
+            border-top: 1px solid #e5e5e5;
+            padding-top: 20px;
+        }
+
+        .log-entry {
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">TOKEN BANK</div>
+            <div class="subtitle">Direct Ganache Connection</div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Account Selection</div>
+            <div class="input-group">
+                <select id="accountSelector">
+                    <option value="">Select an account</option>
+                </select>
+                <div class="info-text">Choose from your Ganache accounts</div>
+            </div>
+            <button id="connectBtn">CONNECT TO GANACHE</button>
+            
+            <div id="walletInfo" class="wallet-info hidden">
+                <p>Connected Account: <span id="walletAddress"></span></p>
+                <p>Balance: <span id="walletBalance">0</span> tokens</p>
+                <p>ETH Balance: <span id="ethBalance">0</span> ETH</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Deposit Tokens</div>
+            <div class="input-group">
+                <input type="number" id="depositAmount" placeholder="Amount">
+            </div>
+            <button id="depositBtn" disabled>DEPOSIT</button>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Transfer Tokens</div>
+            <div class="input-group">
+                <select id="transferAddress">
+                    <option value="">Select recipient</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <input type="number" id="transferAmount" placeholder="Amount">
+            </div>
+            <button id="transferBtn" disabled>TRANSFER</button>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Check Balance</div>
+            <div class="input-group">
+                <select id="checkAddress">
+                    <option value="">Select account to check</option>
+                </select>
+            </div>
+            <button id="checkBalanceBtn" disabled>CHECK BALANCE</button>
+            <div id="balanceResult" class="result"></div>
+        </div>
+
+        <div class="transaction-log">
+            <div class="section-title">Activity Log</div>
+            <div id="log"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+    <script>
+        // Configuration - Update these if needed
+        const GANACHE_URL = "http://127.0.0.1:7545";
+        const CONTRACT_ADDRESS = "YOUR_CONTRACT_ADDRESS_HERE"; // Replace with your actual address
+        
+        const contractABI = [
+            {
+                "inputs": [],
+                "stateMutability": "nonpayable",
+                "type": "constructor"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "deposit",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "user",
+                        "type": "address"
+                    }
+                ],
+                "name": "getBalance",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "to",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "transfer",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "name": "balances",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "owner",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            }
+        ];
+
+        let web3;
+        let contract;
+        let accounts;
+        let selectedAccount;
+
+        async function init() {
+            setupEventListeners();
+            logMessage('Ready to connect to Ganache');
+        }
+
+        async function connectToGanache() {
+            try {
+                logMessage('Connecting to Ganache...');
+                
+                // Connect to Ganache
+                web3 = new Web3(GANACHE_URL);
+                
+                // Get all accounts from Ganache
+                accounts = await web3.eth.getAccounts();
+                
+                if (accounts.length === 0) {
+                    throw new Error('No accounts found in Ganache');
+                }
+                
+                logMessage(`Found ${accounts.length} accounts in Ganache`);
+                
+                // Populate account selectors
+                populateAccountSelectors();
+                
+                // Load contract
+                contract = new web3.eth.Contract(contractABI, CONTRACT_ADDRESS);
+                logMessage('Contract loaded successfully');
+                
+                document.getElementById('connectBtn').textContent = 'CONNECTED';
+                document.getElementById('connectBtn').disabled = true;
+                
+            } catch (error) {
+                logMessage('Connection failed: ' + error.message, 'error');
+                logMessage('Make sure Ganache is running on ' + GANACHE_URL, 'error');
+            }
+        }
+
+        function populateAccountSelectors() {
+            const accountSelector = document.getElementById('accountSelector');
+            const transferSelector = document.getElementById('transferAddress');
+            const checkSelector = document.getElementById('checkAddress');
+            
+            // Clear existing options
+            accountSelector.innerHTML = '<option value="">Select an account</option>';
+            transferSelector.innerHTML = '<option value="">Select recipient</option>';
+            checkSelector.innerHTML = '<option value="">Select account to check</option>';
+            
+            // Add accounts to all selectors
+            accounts.forEach((account, index) => {
+                const optionText = `Account ${index + 1}: ${account.substring(0, 10)}...`;
+                
+                const option1 = new Option(optionText, account);
+                const option2 = new Option(optionText, account);
+                const option3 = new Option(optionText, account);
+                
+                accountSelector.add(option1);
+                transferSelector.add(option2);
+                checkSelector.add(option3);
+            });
+        }
+
+        function setupEventListeners() {
+            document.getElementById('connectBtn').addEventListener('click', connectToGanache);
+            document.getElementById('accountSelector').addEventListener('change', selectAccount);
+            document.getElementById('depositBtn').addEventListener('click', deposit);
+            document.getElementById('transferBtn').addEventListener('click', transfer);
+            document.getElementById('checkBalanceBtn').addEventListener('click', checkBalance);
+        }
+
+        async function selectAccount() {
+            selectedAccount = document.getElementById('accountSelector').value;
+            
+            if (!selectedAccount) {
+                return;
+            }
+            
+            document.getElementById('walletAddress').textContent = selectedAccount;
+            document.getElementById('walletInfo').classList.remove('hidden');
+            
+            // Enable buttons
+            document.getElementById('depositBtn').disabled = false;
+            document.getElementById('transferBtn').disabled = false;
+            document.getElementById('checkBalanceBtn').disabled = false;
+            
+            logMessage(`Selected account: ${selectedAccount.substring(0, 10)}...`);
+            
+            // Update balances
+            await updateWalletBalance();
+            await updateEthBalance();
+        }
+
+        async function updateWalletBalance() {
+            if (contract && selectedAccount) {
+                try {
+                    const balance = await contract.methods.getBalance(selectedAccount).call();
+                    document.getElementById('walletBalance').textContent = balance;
+                } catch (error) {
+                    console.error('Error updating token balance:', error);
+                }
+            }
+        }
+
+        async function updateEthBalance() {
+            if (web3 && selectedAccount) {
+                try {
+                    const balance = await web3.eth.getBalance(selectedAccount);
+                    const ethBalance = web3.utils.fromWei(balance, 'ether');
+                    document.getElementById('ethBalance').textContent = parseFloat(ethBalance).toFixed(4);
+                } catch (error) {
+                    console.error('Error updating ETH balance:', error);
+                }
+            }
+        }
+
+        async function deposit() {
+            const amount = document.getElementById('depositAmount').value;
+            if (!amount || amount <= 0) {
+                logMessage('Enter valid amount', 'error');
+                return;
+            }
+
+            try {
+                document.getElementById('depositBtn').disabled = true;
+                document.getElementById('depositBtn').textContent = 'PROCESSING...';
+
+                await contract.methods.deposit(amount).send({ 
+                    from: selectedAccount,
+                    gas: 300000
+                });
+
+                logMessage(`Deposited ${amount} tokens`);
+                document.getElementById('depositAmount').value = '';
+                await updateWalletBalance();
+                
+            } catch (error) {
+                logMessage('Deposit failed: ' + error.message, 'error');
+            } finally {
+                document.getElementById('depositBtn').disabled = false;
+                document.getElementById('depositBtn').textContent = 'DEPOSIT';
+            }
+        }
+
+        async function transfer() {
+            const toAddress = document.getElementById('transferAddress').value;
+            const amount = document.getElementById('transferAmount').value;
+
+            if (!toAddress || !amount || amount <= 0) {
+                logMessage('Fill all fields', 'error');
+                return;
+            }
+
+            try {
+                document.getElementById('transferBtn').disabled = true;
+                document.getElementById('transferBtn').textContent = 'PROCESSING...';
+
+                await contract.methods.transfer(toAddress, amount).send({ 
+                    from: selectedAccount,
+                    gas: 300000
+                });
+
+                logMessage(`Transferred ${amount} tokens to ${toAddress.substring(0, 10)}...`);
+                document.getElementById('transferAmount').value = '';
+                await updateWalletBalance();
+                
+            } catch (error) {
+                logMessage('Transfer failed: ' + error.message, 'error');
+            } finally {
+                document.getElementById('transferBtn').disabled = false;
+                document.getElementById('transferBtn').textContent = 'TRANSFER';
+            }
+        }
+
+        async function checkBalance() {
+            const address = document.getElementById('checkAddress').value || selectedAccount;
+            
+            if (!address) {
+                logMessage('Select an account', 'error');
+                return;
+            }
+
+            try {
+                const balance = await contract.methods.getBalance(address).call();
+                const resultDiv = document.getElementById('balanceResult');
+                resultDiv.textContent = `Balance: ${balance} tokens`;
+                resultDiv.className = 'result success';
+                logMessage(`Balance for ${address.substring(0, 10)}...: ${balance} tokens`);
+            } catch (error) {
+                logMessage('Error checking balance: ' + error.message, 'error');
+            }
+        }
+
+        function logMessage(message, type = 'info') {
+            const log = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            if (type === 'error') {
+                entry.style.color = '#d0021b';
+            }
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

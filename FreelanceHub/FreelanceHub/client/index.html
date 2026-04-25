@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FreelanceHub — Find World-Class Talent</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════
+     NAVBAR
+══════════════════════════════════════════ -->
+<nav class="navbar">
+  <div class="container navbar__inner">
+    <a href="#" class="navbar__logo" onclick="navigate('home')">
+      <div class="logo-mark">⚡</div>
+      <span class="logo-text">Freelance<span>Hub</span></span>
+    </a>
+
+    <div class="navbar__links">
+      <a class="nav-link active" data-page="home">Home</a>
+      <a class="nav-link" data-page="services">Browse</a>
+      <a class="nav-link" data-page="dashboard">Dashboard</a>
+    </div>
+
+    <div class="navbar__actions">
+      <button class="badge-btn" onclick="navigate('dashboard'); setTimeout(() => { document.querySelector('[data-tab=saved]')?.click() }, 50)">
+        ♡ Saved
+        <span class="badge" id="saved-badge">0</span>
+      </button>
+      <button class="badge-btn" onclick="navigate('dashboard'); setTimeout(() => { document.querySelector('[data-tab=hired]')?.click() }, 50)">
+        🚀 Hired
+        <span class="badge" id="hired-badge">0</span>
+      </button>
+      <button class="btn btn-primary" onclick="navigate('services')">Browse Services</button>
+    </div>
+  </div>
+</nav>
+
+<!-- ══════════════════════════════════════════
+     HOME PAGE
+══════════════════════════════════════════ -->
+<div class="page active" id="page-home">
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero__bg"></div>
+    <div class="hero__grid"></div>
+    <div class="container">
+      <div class="hero__content">
+        <div class="hero__eyebrow">
+          <span>✦</span> 1,200+ services available today
+        </div>
+        <h1 class="hero__title">
+          Find Expert<br>
+          Freelancers for<br>
+          <em>Any Project</em>
+        </h1>
+        <p class="hero__sub">
+          Connect with top-rated professionals in design, development, writing, 
+          video, marketing, and more. Start today, ship tomorrow.
+        </p>
+        <div class="hero__search">
+          <input id="hero-search-input" class="hero__search-input" 
+                 type="text" placeholder="Search for logo design, web dev, content..." />
+          <button id="hero-search-btn" class="btn btn-primary btn-lg">Search →</button>
+        </div>
+        <div class="hero__stats">
+          <div class="stat">
+            <div class="stat__n">12<span>K+</span></div>
+            <div class="stat__label">Active Freelancers</div>
+          </div>
+          <div class="stat">
+            <div class="stat__n">98<span>K</span></div>
+            <div class="stat__label">Projects Completed</div>
+          </div>
+          <div class="stat">
+            <div class="stat__n">4.9<span>★</span></div>
+            <div class="stat__label">Average Rating</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Categories -->
+  <div class="categories-strip">
+    <div class="container">
+      <div class="categories-strip__title">Browse by Category</div>
+      <div class="cat-list">
+        <button class="cat-pill active" data-cat="All">
+          <span class="cat-icon">🌐</span> All
+        </button>
+        <button class="cat-pill" data-cat="Design">
+          <span class="cat-icon">🎨</span> Design
+        </button>
+        <button class="cat-pill" data-cat="Development">
+          <span class="cat-icon">💻</span> Development
+        </button>
+        <button class="cat-pill" data-cat="Writing">
+          <span class="cat-icon">✍️</span> Writing
+        </button>
+        <button class="cat-pill" data-cat="Video">
+          <span class="cat-icon">🎬</span> Video
+        </button>
+        <button class="cat-pill" data-cat="Marketing">
+          <span class="cat-icon">📈</span> Marketing
+        </button>
+        <button class="cat-pill" data-cat="Audio">
+          <span class="cat-icon">🎙️</span> Audio
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Featured Services -->
+  <section class="section">
+    <div class="container">
+      <div class="section__header">
+        <h2 class="section__title">Featured <span>Services</span></h2>
+        <button id="view-all-btn" class="btn btn-outline">View All →</button>
+      </div>
+
+      <!-- Drop zones (shown during drag) -->
+      <div class="drop-zone" data-action="save" id="drop-save">
+        ♡ &nbsp; Drop here to <strong>Save</strong> a service
+      </div>
+      <div class="drop-zone" data-action="hire" id="drop-hire">
+        ⚡ &nbsp; Drop here to <strong>Hire</strong> a service
+      </div>
+
+      <div class="services-grid" id="home-services-grid">
+        <!-- Cards rendered by JS -->
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container footer__inner">
+      <div class="footer__copy">© 2025 FreelanceHub. Built with ❤️ and Express.js.</div>
+      <div class="footer__links">
+        <a href="#" class="footer__link">Terms</a>
+        <a href="#" class="footer__link">Privacy</a>
+        <a href="#" class="footer__link">Support</a>
+      </div>
+    </div>
+  </footer>
+
+</div>
+
+<!-- ══════════════════════════════════════════
+     SERVICES PAGE
+══════════════════════════════════════════ -->
+<div class="page" id="page-services">
+  <div class="container">
+
+    <div class="services-page-header">
+      <h1 class="page-title">Browse Services</h1>
+      <p class="page-subtitle">Discover talented freelancers ready to help you succeed</p>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-bar">
+      <div class="search-box">
+        <span class="search-box__icon">🔍</span>
+        <input id="services-search" type="text" placeholder="Search services, skills, or keywords..." />
+      </div>
+      <select id="filter-category" class="filter-select">
+        <option value="All">All Categories</option>
+        <option value="Design">🎨 Design</option>
+        <option value="Development">💻 Development</option>
+        <option value="Writing">✍️ Writing</option>
+        <option value="Video">🎬 Video</option>
+        <option value="Marketing">📈 Marketing</option>
+        <option value="Audio">🎙️ Audio</option>
+      </select>
+      <select id="filter-sort" class="filter-select">
+        <option value="">Sort: Recommended</option>
+        <option value="price_asc">Price: Low to High</option>
+        <option value="price_desc">Price: High to Low</option>
+        <option value="rating">Top Rated</option>
+        <option value="popular">Most Popular</option>
+      </select>
+    </div>
+
+    <div class="results-meta">
+      <div id="results-count" class="results-count"></div>
+      <div style="font-size:0.8rem;color:var(--text-muted);">
+        💡 Drag cards to save or hire instantly
+      </div>
+    </div>
+
+    <!-- Drop zones -->
+    <div class="drop-zone" data-action="save">
+      ♡ &nbsp; Drop here to <strong>Save</strong> a service
+    </div>
+    <div class="drop-zone" data-action="hire">
+      ⚡ &nbsp; Drop here to <strong>Hire</strong> a service
+    </div>
+
+    <div class="services-grid" id="services-list">
+      <!-- Cards rendered by JS -->
+    </div>
+
+  </div>
+
+  <footer class="footer">
+    <div class="container footer__inner">
+      <div class="footer__copy">© 2025 FreelanceHub. Built with ❤️ and Express.js.</div>
+      <div class="footer__links">
+        <a href="#" class="footer__link">Terms</a>
+        <a href="#" class="footer__link">Privacy</a>
+      </div>
+    </div>
+  </footer>
+</div>
+
+<!-- ══════════════════════════════════════════
+     DASHBOARD PAGE
+══════════════════════════════════════════ -->
+<div class="page" id="page-dashboard">
+  <div class="container">
+
+    <div class="dashboard-header">
+      <div class="dashboard-header__top">
+        <div class="user-avatar-lg">U</div>
+        <div>
+          <div class="dashboard-name">My Dashboard</div>
+          <div class="dashboard-sub">Manage your saved and hired services</div>
+        </div>
+      </div>
+
+      <div class="dashboard-stats">
+        <div class="dash-stat">
+          <div class="dash-stat__icon">♡</div>
+          <div class="dash-stat__n" id="dash-stat-saved">—</div>
+          <div class="dash-stat__label">Saved Services</div>
+        </div>
+        <div class="dash-stat">
+          <div class="dash-stat__icon">🚀</div>
+          <div class="dash-stat__n" id="dash-stat-hired">—</div>
+          <div class="dash-stat__label">Hired Services</div>
+        </div>
+        <div class="dash-stat">
+          <div class="dash-stat__icon">📦</div>
+          <div class="dash-stat__n" id="dash-stat-total">—</div>
+          <div class="dash-stat__label">Total Interactions</div>
+        </div>
+        <div class="dash-stat">
+          <div class="dash-stat__icon">💰</div>
+          <div class="dash-stat__n" id="dash-stat-spend">—</div>
+          <div class="dash-stat__label">Total Invested</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="dashboard-tabs">
+      <button class="tab-btn active" data-tab="saved">♡ Saved</button>
+      <button class="tab-btn" data-tab="hired">🚀 Hired</button>
+    </div>
+
+    <div class="tab-content active" id="tab-saved">
+      <div id="saved-list">
+        <div class="empty-state">
+          <div class="empty-state__icon">♡</div>
+          <div class="empty-state__title">No saved services yet</div>
+          <div class="empty-state__sub">Browse services and click the heart to save them</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-hired">
+      <div id="hired-list">
+        <div class="empty-state">
+          <div class="empty-state__icon">🚀</div>
+          <div class="empty-state__title">No hired services yet</div>
+          <div class="empty-state__sub">Find a service you love and hit Hire</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer class="footer">
+    <div class="container footer__inner">
+      <div class="footer__copy">© 2025 FreelanceHub. Built with ❤️ and Express.js.</div>
+    </div>
+  </footer>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SERVICE DETAIL MODAL
+══════════════════════════════════════════ -->
+<div class="modal-overlay" id="service-modal-overlay">
+  <div class="modal" id="service-modal-body">
+    <!-- Content injected by JS -->
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     CONFIRM HIRE MODAL
+══════════════════════════════════════════ -->
+<div class="modal-overlay" id="confirm-modal-overlay">
+  <div class="modal confirm-modal">
+    <div class="modal__body" id="confirm-modal-body">
+      <!-- Content injected by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     TOAST CONTAINER
+══════════════════════════════════════════ -->
+<div class="toast-container" id="toast-container"></div>
+
+<script src="js/app.js"></script>
+</body>
+</html>

@@ -1,5 +1,0 @@
-const MiniTokenBank = artifacts.require("MiniTokenBank");
-
-module.exports = function (deployer) {
-  deployer.deploy(YourContract);
-};
